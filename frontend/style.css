@@ -1,0 +1,45 @@
+/* 1. Google Font Import (Modern Look ke liye) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary-blue: #2563eb;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+/* 2. Smooth Scrolling (Jab menu items pe click karein) */
+html {
+    scroll-behavior: smooth;
+}
+
+/* 3. Custom Hover Effects */
+.btn-hover-effect {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-hover-effect:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+/* 4. Gallery Section Image Glow */
+.gallery-img {
+    transition: filter 0.3s ease;
+    cursor: pointer;
+}
+
+.gallery-img:hover {
+    filter: brightness(1.1);
+    outline: 3px solid var(--primary-blue);
+}
+
+/* 5. How It Works Section - Step Styling */
+.step-card {
+    border-left: 4px solid var(--primary-blue);
+    padding-left: 1rem;
+}
