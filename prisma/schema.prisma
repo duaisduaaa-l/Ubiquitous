@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Admin {
+  admin_id String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
+}
+
+model Teacher {
+  teacher_id String       @id @default(cuid())
+  name       String
+  email      String       @unique
+  department String
+  password   String
+  attendance Attendance[]
+  schedules  Schedule[]
+}
+
+model Student {
+  student_id  String       @id @default(cuid())
+  name        String
+  roll_number String       @unique
+  course      String
+  year        String
+  section     String
+  attendance  Attendance[]
+}
+
+model Attendance {
+  attendance_id String   @id @default(cuid())
+  student_id    String
+  teacher_id    String
+  date          DateTime @default(now())
+  status        String   // "Present" or "Absent"
+
+  // Relations
+  student Student @relation(fields: [student_id], references: [student_id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacher_id], references: [teacher_id], onDelete: Cascade)
+
+  @@unique([student_id, teacher_id, date]) // Ensures one attendance record per student per teacher per day
+}
+
+model Schedule {
+  schedule_id String  @id @default(cuid())
+  teacher_id  String
+  dayOfWeek   String
+  startTime   String
+  endTime     String
+  subject     String
+  section     String
+
+  teacher     Teacher @relation(fields: [teacher_id], references: [teacher_id], onDelete: Cascade)
+}

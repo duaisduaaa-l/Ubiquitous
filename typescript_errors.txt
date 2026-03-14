@@ -1,0 +1,20 @@
+src/app/api/admin/teachers/[id]/route.ts(7,30): error TS18046: 'context' is of type 'unknown'.
+src/app/api/admin/teachers/[id]/route.ts(34,30): error TS18046: 'context' is of type 'unknown'.
+src/app/api/teacher/report/route.ts(26,62): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: unknown, index: number, array: unknown[]) => value is unknown, thisArg?: any): unknown[]', gave the following error.
+    Argument of type '(a: { status: string; }) => boolean' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => value is unknown'.
+      Types of parameters 'a' and 'value' are incompatible.
+        Type 'unknown' is not assignable to type '{ status: string; }'.
+  Overload 2 of 2, '(predicate: (value: unknown, index: number, array: unknown[]) => unknown, thisArg?: any): unknown[]', gave the following error.
+    Argument of type '(a: { status: string; }) => boolean' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => unknown'.
+      Types of parameters 'a' and 'value' are incompatible.
+        Type 'unknown' is not assignable to type '{ status: string; }'.
+src/app/api/teacher/report/route.ts(27,61): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: unknown, index: number, array: unknown[]) => value is unknown, thisArg?: any): unknown[]', gave the following error.
+    Argument of type '(a: { status: string; }) => boolean' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => value is unknown'.
+      Types of parameters 'a' and 'value' are incompatible.
+        Type 'unknown' is not assignable to type '{ status: string; }'.
+  Overload 2 of 2, '(predicate: (value: unknown, index: number, array: unknown[]) => unknown, thisArg?: any): unknown[]', gave the following error.
+    Argument of type '(a: { status: string; }) => boolean' is not assignable to parameter of type '(value: unknown, index: number, array: unknown[]) => unknown'.
+      Types of parameters 'a' and 'value' are incompatible.
+        Type 'unknown' is not assignable to type '{ status: string; }'.
