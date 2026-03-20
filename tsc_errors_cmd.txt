@@ -1,0 +1,12 @@
+src/app/api/admin/dashboard/route.ts(17,53): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/admin/dashboard/route.ts(31,37): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/admin/dashboard/route.ts(47,24): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/admin/dashboard/route.ts(66,29): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/api/admin/dashboard/route.ts(69,24): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/teacher/dashboard/route.ts(31,54): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/teacher/dashboard/route.ts(32,53): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/teacher/dashboard/route.ts(48,35): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/teacher/dashboard/route.ts(73,39): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/teacher/report/route.ts(25,37): error TS7006: Parameter 'student' implicitly has an 'any' type.
+src/app/api/teacher/report/route.ts(27,62): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/teacher/report/route.ts(28,61): error TS7006: Parameter 'a' implicitly has an 'any' type.
