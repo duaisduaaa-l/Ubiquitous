@@ -1,27 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, MapPin } from 'lucide-react';
-
-// ─── Geo-fence config ───────────────────────────────────────────────
-const CAMPUS = {lat:30.77090509432338,
-    lng: 76.57029968083211, radiusMeters: 100 };
-
-function getDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const R = 6371000;
-    const toRad = (d: number) => (d * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function isWithinCampus(lat: number, lng: number): boolean {
-    return getDistanceMeters(lat, lng, CAMPUS.lat, CAMPUS.lng) <= CAMPUS.radiusMeters;
-}
-// ────────────────────────────────────────────────────────────────────
+import { Users } from 'lucide-react';
 
 interface Student {
     student_id: string;
@@ -36,54 +16,63 @@ interface Schedule {
     section: string;
 }
 
-type GeoStatus = 'idle' | 'checking' | 'allowed' | 'denied' | 'error';
-
 export default function MarkAttendance() {
     const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // By default, assuming teacher_id from session/context. Since Next app is using JWT cookie,
+    // we'll fetch teacher profile or decode it on server. Here we'll pass an extra endpoint to get me context.
     const [teacherId, setTeacherId] = useState<string>('');
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [selectedSection, setSelectedSection] = useState<string>('All');
+
     const [dateStr, setDateStr] = useState<string>(new Date().toISOString().slice(0, 10));
     const [attendanceState, setAttendanceState] = useState<{ [key: string]: 'Present' | 'Absent' }>({});
     const [message, setMessage] = useState({ type: '', text: '' });
 
-    // ─── Geo-fence state ─────────────────────────────────────────────
-    const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle');
-    const [geoError, setGeoError] = useState('');
-    const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
-    // ────────────────────────────────────────────────────────────────
-
+    // Add functionality to fetch teacher profile context dynamically
     const fetchContext = async () => {
         try {
             const res = await fetch('/api/teacher/me');
             const data = await res.json();
-            if (data.success && data.user) setTeacherId(data.user.id);
-        } catch {}
+            if (data.success && data.user) {
+                setTeacherId(data.user.id);
+            }
+        } catch {
+        }
     };
 
     const fetchSchedules = async (tid: string) => {
         try {
             const res = await fetch(`/api/teacher/schedule?teacher_id=${tid}`);
             const data = await res.json();
-            if (data.success && data.schedules) setSchedules(data.schedules);
-        } catch {}
+            if (data.success && data.schedules) {
+                setSchedules(data.schedules);
+            }
+        } catch {
+        }
     };
 
-    const fetchStudentsAndAttendance = async (tid: string, date: string, sectionFilter: string) => {
+    const fetchStudentsAndAttendance = async (teacherId: string, date: string, sectionFilter: string) => {
         setLoading(true);
         try {
+            // 1. Get all students
             const studRes = await fetch('/api/teacher/students');
             let studData: Student[] = await studRes.json();
+
+            // Filter dynamically by section if not "All"
             if (sectionFilter && sectionFilter !== 'All') {
                 studData = studData.filter(s => s.section === sectionFilter);
             }
+
             setStudents(studData);
 
-            if (tid) {
-                const attRes = await fetch(`/api/teacher/attendance?date=${date}&teacher_id=${tid}`);
+            // 2. Get existing attendance for this date
+            if (teacherId) {
+                const attRes = await fetch(`/api/teacher/attendance?date=${date}&teacher_id=${teacherId}`);
                 const attData = await attRes.json();
+
                 const newState: { [key: string]: 'Present' | 'Absent' } = {};
                 if (Array.isArray(attData)) {
                     attData.forEach((a: { student_id: string; status: 'Present' | 'Absent' }) => {
@@ -92,11 +81,16 @@ export default function MarkAttendance() {
                 }
                 setAttendanceState(newState);
             }
-        } catch {}
-        finally { setLoading(false); }
+        } catch {
+        } finally {
+            setLoading(false);
+        }
     };
 
-    useEffect(() => { fetchContext(); }, []);
+    useEffect(() => {
+        fetchContext();
+    }, []);
+
     useEffect(() => {
         if (teacherId) {
             fetchSchedules(teacherId);
@@ -104,59 +98,15 @@ export default function MarkAttendance() {
         }
     }, [teacherId, dateStr, selectedSection]);
 
-    // ─── Get location and validate ───────────────────────────────────
-    const checkLocation = (): Promise<{ allowed: boolean; lat?: number; lng?: number }> => {
-        return new Promise((resolve) => {
-            if (!navigator.geolocation) {
-                setGeoStatus('error');
-                setGeoError('Geolocation is not supported by your browser.');
-                resolve({ allowed: false });
-                return;
-            }
-            setGeoStatus('checking');
-            setGeoError('');
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const { latitude: lat, longitude: lng } = pos.coords;
-                    setUserCoords({ lat, lng });
-                    const allowed = isWithinCampus(lat, lng);
-                    setGeoStatus(allowed ? 'allowed' : 'denied');
-                    if (!allowed) {
-                        const dist = Math.round(getDistanceMeters(lat, lng, CAMPUS.lat, CAMPUS.lng));
-                        setGeoError(`You are ${dist}m away from campus. Must be within ${CAMPUS.radiusMeters}m.`);
-                    }
-                    resolve({ allowed, lat, lng });
-                },
-                (err) => {
-                    setGeoStatus('error');
-                    setGeoError(
-                        err.code === 1
-                            ? 'Location permission denied. Please allow location access and try again.'
-                            : 'Unable to detect your location. Please try again.'
-                    );
-                    resolve({ allowed: false });
-                },
-                { enableHighAccuracy: true, timeout: 8000 }
-            );
-        });
-    };
-    // ────────────────────────────────────────────────────────────────
-
     const handleSave = async () => {
         if (!teacherId) return;
-
-        // ─── Geo-fence check before saving ──────────────────────────
-        const { allowed, lat, lng } = await checkLocation();
-        if (!allowed) return;
-        // ────────────────────────────────────────────────────────────
-
         setSaving(true);
         setMessage({ type: '', text: '' });
 
         try {
             const records = students.map(s => ({
                 student_id: s.student_id,
-                status: attendanceState[s.student_id] || 'Absent',
+                status: attendanceState[s.student_id] || 'Absent' // default missing interactions to absent
             }));
 
             const res = await fetch('/api/teacher/attendance', {
@@ -165,16 +115,14 @@ export default function MarkAttendance() {
                 body: JSON.stringify({
                     teacher_id: teacherId,
                     baseDateStr: dateStr,
-                    records,
-                    latitude: lat,   // sent to backend for server-side check
-                    longitude: lng,
-                }),
+                    records
+                })
             });
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to save');
 
-            setMessage({ type: 'success', text: 'Attendance saved successfully' });
+            setMessage({ type: 'success', text: 'Attendance Saved Successfully' });
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         } catch (err) {
             setMessage({ type: 'error', text: (err as Error).message });
@@ -188,24 +136,6 @@ export default function MarkAttendance() {
     };
 
     const uniqueSections = Array.from(new Set(schedules.map(s => s.section)));
-
-    // ─── Geo status banner styles ────────────────────────────────────
-    const geoBannerStyle: Record<GeoStatus, React.CSSProperties> = {
-        idle:     { display: 'none' },
-        checking: { backgroundColor: 'rgba(234,179,8,0.1)',   color: 'var(--warning-color, #ca8a04)' },
-        allowed:  { backgroundColor: 'rgba(16,185,129,0.1)',  color: 'var(--success-color)' },
-        denied:   { backgroundColor: 'rgba(239,68,68,0.1)',   color: 'var(--danger-color)' },
-        error:    { backgroundColor: 'rgba(239,68,68,0.1)',   color: 'var(--danger-color)' },
-    };
-
-    const geoMessages: Record<GeoStatus, string> = {
-        idle:     '',
-        checking: 'Checking your location...',
-        allowed:  'Location verified — you are on campus.',
-        denied:   geoError,
-        error:    geoError,
-    };
-    // ────────────────────────────────────────────────────────────────
 
     return (
         <div>
@@ -243,26 +173,6 @@ export default function MarkAttendance() {
             </div>
 
             <div className="card table-container">
-
-                {/* ── Geo-fence status banner ── */}
-                {geoStatus !== 'idle' && (
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        padding: '0.75rem 1rem',
-                        marginBottom: '1rem',
-                        borderRadius: '6px',
-                        fontWeight: 600,
-                        fontSize: '0.9rem',
-                        ...geoBannerStyle[geoStatus],
-                    }}>
-                        <MapPin size={16} />
-                        {geoMessages[geoStatus]}
-                    </div>
-                )}
-
-                {/* ── Save / submit message ── */}
                 {message.text && (
                     <div style={{
                         padding: '1rem',
@@ -271,7 +181,7 @@ export default function MarkAttendance() {
                         backgroundColor: message.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                         color: message.type === 'success' ? 'var(--success-color)' : 'var(--danger-color)',
                         textAlign: 'center',
-                        fontWeight: 600,
+                        fontWeight: 600
                     }}>
                         {message.text}
                     </div>
@@ -294,6 +204,7 @@ export default function MarkAttendance() {
                             <tbody>
                                 {students.map((s) => {
                                     const status = attendanceState[s.student_id];
+
                                     return (
                                         <tr key={s.student_id}>
                                             <td style={{ fontWeight: 600, color: 'var(--primary-color)' }}>{s.roll_number}</td>
@@ -331,23 +242,11 @@ export default function MarkAttendance() {
                         </table>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                            <button
-                                onClick={() => fetchStudentsAndAttendance(teacherId, dateStr, selectedSection)}
-                                className="btn-danger"
-                                style={{ backgroundColor: 'transparent', color: 'var(--text-color)', border: '1px solid var(--border-color)' }}
-                            >
+                            <button onClick={() => fetchStudentsAndAttendance(teacherId, dateStr, selectedSection)} className="btn-danger" style={{ backgroundColor: 'transparent', color: 'var(--text-color)', border: '1px solid var(--border-color)' }}>
                                 Reset
                             </button>
-                            <button
-                                onClick={handleSave}
-                                className="btn-primary"
-                                disabled={saving || geoStatus === 'checking'}
-                            >
-                                {geoStatus === 'checking'
-                                    ? 'Verifying location...'
-                                    : saving
-                                    ? 'Saving...'
-                                    : 'Save Attendance'}
+                            <button onClick={handleSave} className="btn-primary" disabled={saving}>
+                                {saving ? 'Saving...' : 'Save Attendance'}
                             </button>
                         </div>
                     </>
