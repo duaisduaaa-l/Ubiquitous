@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface Teacher {
     teacher_id: string;
@@ -11,6 +12,7 @@ interface Teacher {
 }
 
 export default function TeachersPage() {
+    const router = useRouter();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
 

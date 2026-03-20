@@ -29,21 +29,41 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 
-        // Generate token
         const tokenPayload = {
             id: role === 'admin' ? (user as { admin_id: string }).admin_id : (user as { teacher_id: string }).teacher_id,
-            role: role,
+            role,
             name: user.name,
             email: user.email,
         };
         const token = signToken(tokenPayload);
+
+        // ─── Log this login ───────────────────────────────────────────────
+        const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+        const userAgent = req.headers.get('user-agent') || 'unknown';
+        try {
+            await (prisma as any).loginLog.create({
+                data: {
+                    user_id: tokenPayload.id,
+                    user_name: user.name,
+                    user_email: user.email,
+                    role,
+                    ipAddress,
+                    userAgent,
+                },
+            });
+            console.log(`[LOGIN] ${role} "${user.name}" logged in from ${ipAddress}`);
+        } catch (logErr) {
+            // Don't fail login if logging fails — just warn
+            console.warn('[LOGIN] Could not write login log:', logErr);
+        }
+        // ─────────────────────────────────────────────────────────────────
 
         const res = NextResponse.json({ success: true, user: tokenPayload });
         res.cookies.set('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 86400, // 1 day
+            maxAge: 86400,
             path: '/',
         });
 

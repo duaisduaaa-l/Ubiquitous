@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Settings, LayoutDashboard, CalendarDays, BookOpen, Users } from 'lucide-react';
+import { LogOut, Settings, LayoutDashboard, CalendarDays, BookOpen, Users, Activity, UserSquare } from 'lucide-react';
 
 export default function Sidebar({ role }: { role: 'admin' | 'teacher' }) {
     const pathname = usePathname();
@@ -17,6 +17,8 @@ export default function Sidebar({ role }: { role: 'admin' | 'teacher' }) {
         { name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard size={22} /> },
         { name: 'Teachers', href: '/admin/teachers', icon: <Users size={22} /> },
         { name: 'Add Teacher', href: '/admin/add-teacher', icon: <BookOpen size={22} /> },
+        { name: 'Login Logs', href: '/admin/login-logs', icon: <Activity size={22} /> },
+        { name: 'Teacher Profiles', href: '/admin/teachers', icon: <UserSquare size={22} /> },
     ];
 
     const teacherLinks = [
@@ -40,19 +42,29 @@ export default function Sidebar({ role }: { role: 'admin' | 'teacher' }) {
                 <h1 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Dashboard</h1>
             </div>
 
-            <nav style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
+            <nav style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
                 {links.map((link) => {
-                    const isActive = pathname === link.href;
+                    const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
                     return (
                         <Link
-                            key={link.href}
+                            key={link.href + link.name}
                             href={link.href}
                             className={`nav-link-dribbble ${isActive ? 'active' : ''}`}
                             title={link.name}
+                            style={{ position: 'relative' }}
                         >
                             {link.icon}
+                            {/* Tooltip */}
+                            <span style={{
+                                position: 'absolute', left: '110%', background: 'rgba(0,0,0,0.85)', color: '#fff',
+                                fontSize: '0.72rem', fontWeight: 600, padding: '0.3rem 0.6rem', borderRadius: '6px',
+                                whiteSpace: 'nowrap', pointerEvents: 'none', opacity: 0, transition: 'opacity 0.15s',
+                                zIndex: 100,
+                            }} className="sidebar-tooltip">
+                                {link.name}
+                            </span>
                         </Link>
-                    )
+                    );
                 })}
             </nav>
 
